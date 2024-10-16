@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 
 
@@ -9,7 +10,7 @@ using UnityEngine;
 무기 관련 스크립트 
 */
 [System.Serializable]
-public class AmmoEvent: UnityEngine.Events.UnityEvent<int, int> { }
+public class AmmoEvent : UnityEngine.Events.UnityEvent<int, int> { }
 
 
 
@@ -26,14 +27,14 @@ public class Weapon : MonoBehaviour
 
     [Header("Audio Clips")]
     [SerializeField] private AudioClip audioClipTakeOutWeapon;      // 무기 장착 사운드
-    [SerializeField]
-    private AudioClip audioClipFire;        // 공격 사운드 
+    [SerializeField] private AudioClip audioClipFire;        // 공격 사운드 
+
+    [SerializeField] private AudioClip audioClipReload;     // 재장전 사운드 
 
     [Header("Weapon Setting")]
-    [SerializeField]
-    private WeaponSetting weaponSetting;        // 무기 설정 
+    [SerializeField] private WeaponSetting weaponSetting;        // 무기 설정 
     private float lastAttackTime = 0;   // 마지막 발사시간 체크용
-
+    private bool isReload = false;  // 재장전 중인지 체크 
 
     private AudioSource audioSource;            // 사운드 재생 컴포넌트 
     private PlayerAnimatorController animator;  // 애니메이션 재생 제어 
@@ -63,6 +64,9 @@ public class Weapon : MonoBehaviour
 
     public void StartWeaponAction()
     {
+        // 재장전 중에는 무기 관련 Action 금지 
+        if (isReload == true) return;
+
         if (weaponSetting.isAutomaticAttack == true)
         {
             StartCoroutine("OnAttackLoop");
@@ -77,6 +81,17 @@ public class Weapon : MonoBehaviour
     public void StopWeaponAction()
     {
         StopCoroutine("OnAttackLoop");
+    }
+
+    public void StartReload()
+    {
+        // 현재 재장전 중이면 재장전 불가능
+        if (isReload == true) return;
+
+        // 무기 액션 도중에 'R키를 눌러 재장전을 시도하면 무기 액션 종료 후 재장전
+        StopWeaponAction();
+
+        StartCoroutine("OnReload");
     }
 
 
@@ -95,7 +110,7 @@ public class Weapon : MonoBehaviour
             }
 
             // 공격시 현재의 탄알을 1감소 시킴
-            weaponSetting.currentAmmo --;
+            weaponSetting.currentAmmo--;
 
             // 공격으로 탄수가 1감소 했으므로 UI 업데이트를 위해 이벤트 호출 
             onAmmoEvent.Invoke(weaponSetting.currentAmmo, weaponSetting.maxAmmo);
@@ -137,5 +152,32 @@ public class Weapon : MonoBehaviour
         yield return new WaitForSeconds(weaponSetting.attackRate * 0.3f);
 
         muzzleFlashEffect.SetActive(false);
+    }
+
+    // 재장전 관련 코루틴
+    private IEnumerator OnReload()
+    {
+        isReload = true;
+
+        // 재장전 애니메이션, 사운드 재생
+        animator.OnReload();
+        PlaySound(audioClipReload);
+
+        while (true)
+        {
+            // 사운드가 재생중이 아니고, 현재 애니메이션이 Idle이면 재장전 애니메이션이 종료되었다는 뜻 
+            if (audioSource.isPlaying == false && animator.CurrentAnimationIs("Idle"))
+            {
+                isReload = false;
+
+                // 현재 탄수를 최대로 설정하고, 바뀐 탄수 정보를 UI에 업데이트
+                weaponSetting.currentAmmo = weaponSetting.maxAmmo;
+                onAmmoEvent.Invoke(weaponSetting.currentAmmo, weaponSetting.maxAmmo);
+
+                yield break;
+            }
+
+            yield return null;
+        }
     }
 }
