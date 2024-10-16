@@ -6,10 +6,19 @@ using UnityEngine;
 
 
 /*
-무기 사운드 관련 스크립트 
+무기 관련 스크립트 
 */
+[System.Serializable]
+public class AmmoEvent: UnityEngine.Events.UnityEvent<int, int> { }
+
+
+
 public class Weapon : MonoBehaviour
 {
+    [HideInInspector]
+    public AmmoEvent onAmmoEvent = new AmmoEvent();
+
+
     [Header("Fire Effects")]
     [SerializeField]
     private GameObject muzzleFlashEffect;       // 총구 이펙트 (On / Off)
@@ -29,11 +38,16 @@ public class Weapon : MonoBehaviour
     private AudioSource audioSource;            // 사운드 재생 컴포넌트 
     private PlayerAnimatorController animator;  // 애니메이션 재생 제어 
 
+    // 외부에서 필요한 무기의 정보를 열람할 수 있도록 하는 프로퍼티 
+    public WeaponName WeaponName => weaponSetting.weaponName;
 
     private void Awake()
     {
         audioSource = GetComponent<AudioSource>();
         animator = GetComponentInParent<PlayerAnimatorController>();
+
+        // 처음 탄수는 최대로 설정 
+        weaponSetting.currentAmmo = weaponSetting.maxAmmo;
     }
 
     private void OnEnable()
@@ -42,6 +56,9 @@ public class Weapon : MonoBehaviour
         PlaySound(audioClipTakeOutWeapon);
         // 총구 이펙트 오브젝트 비활성화 
         muzzleFlashEffect.SetActive(false);
+
+        // 무기가 활성화 될때 해당 무기의 탄 수 정보를 갱신 한다. 
+        onAmmoEvent.Invoke(weaponSetting.currentAmmo, weaponSetting.maxAmmo);
     }
 
     public void StartWeaponAction()
@@ -70,6 +87,18 @@ public class Weapon : MonoBehaviour
         {
             // 공격 주기가 되어야 공격할 수 있도록 하기 위해 현재 시간 저장
             lastAttackTime = Time.time;
+
+            // 탄수가 없으면 공격이 불가능하도록 설정 
+            if (weaponSetting.currentAmmo <= 0)
+            {
+                return;
+            }
+
+            // 공격시 현재의 탄알을 1감소 시킴
+            weaponSetting.currentAmmo --;
+
+            // 공격으로 탄수가 1감소 했으므로 UI 업데이트를 위해 이벤트 호출 
+            onAmmoEvent.Invoke(weaponSetting.currentAmmo, weaponSetting.maxAmmo);
 
             // 무기 애니메이션 재생(같은 애니메이션 반복 시 애니메이션을 끊고 처음부터 다시 재생)
             animator.Play("Fire", -1, 0);
