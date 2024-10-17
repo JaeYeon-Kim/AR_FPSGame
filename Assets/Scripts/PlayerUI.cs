@@ -1,10 +1,6 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using Microsoft.Unity.VisualStudio.Editor;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
+
 
 /*
 플레이어의 정보를 UI로 출력하는 스크립트 

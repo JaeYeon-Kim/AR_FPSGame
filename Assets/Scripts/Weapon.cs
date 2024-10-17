@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEngine.XR.ARCore;
 
 
 /*
@@ -35,6 +37,9 @@ public class Weapon : MonoBehaviour
     [SerializeField] private WeaponSetting weaponSetting;        // 무기 설정 
     private float lastAttackTime = 0;   // 마지막 발사시간 체크용
     private bool isReload = false;  // 재장전 중인지 체크 
+
+
+    [SerializeField] private GameObject arCamera;       // 현재 비추고 있는 AR Camera
 
     private AudioSource audioSource;            // 사운드 재생 컴포넌트 
     private PlayerAnimatorController animator;  // 애니메이션 재생 제어 
@@ -96,6 +101,37 @@ public class Weapon : MonoBehaviour
 
 
 
+    // private void OnAttack()
+    // {
+    //     if (Time.time - lastAttackTime > weaponSetting.attackRate)
+    //     {
+    //         // 공격 주기가 되어야 공격할 수 있도록 하기 위해 현재 시간 저장
+    //         lastAttackTime = Time.time;
+
+    //         // 탄수가 없으면 공격이 불가능하도록 설정 
+    //         if (weaponSetting.currentAmmo <= 0)
+    //         {
+    //             return;
+    //         }
+
+    //         // 공격시 현재의 탄알을 1감소 시킴
+    //         weaponSetting.currentAmmo--;
+
+    //         // 공격으로 탄수가 1감소 했으므로 UI 업데이트를 위해 이벤트 호출 
+    //         onAmmoEvent.Invoke(weaponSetting.currentAmmo, weaponSetting.maxAmmo);
+
+    //         // 무기 애니메이션 재생(같은 애니메이션 반복 시 애니메이션을 끊고 처음부터 다시 재생)
+    //         animator.Play("Fire", -1, 0);
+
+    //         // 총구 이펙트 재생
+    //         StartCoroutine("OnMuzzleFlashEffect");
+
+    //         // 공격 사운드 재생 
+    //         PlaySound(audioClipFire);
+    //     }
+    // }
+
+
     private void OnAttack()
     {
         if (Time.time - lastAttackTime > weaponSetting.attackRate)
@@ -107,6 +143,19 @@ public class Weapon : MonoBehaviour
             if (weaponSetting.currentAmmo <= 0)
             {
                 return;
+            }
+
+
+            RaycastHit hit;     // 충돌체의 정보가 담기는 hit
+            if (Physics.Raycast(arCamera.transform.position, arCamera.transform.forward, out hit))
+            {
+                Enemy enemy = hit.transform.GetComponent<Enemy>();      // 충돌체로부터 Enemy 컴포넌트를 가져옴 
+
+                if (enemy != null)
+                {
+                    // 피해를 입히는 코드 
+                    enemy.GetDamage(weaponSetting.damage);
+                }
             }
 
             // 공격시 현재의 탄알을 1감소 시킴

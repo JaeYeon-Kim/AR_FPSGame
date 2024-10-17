@@ -11,7 +11,9 @@ public class PlayerController : MonoBehaviour
 {
     private AudioSource audioSource;        // 사운드 재생 제어 
     private Weapon weapon;      // 무기를 이용한 공격 제어 
-    private PlayerAnimatorController animtor;
+    private PlayerAnimatorController animtor; 
+
+
 
 
     private void Awake()
