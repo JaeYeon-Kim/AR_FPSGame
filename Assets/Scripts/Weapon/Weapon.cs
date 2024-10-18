@@ -147,6 +147,7 @@ public class Weapon : MonoBehaviour
 
 
             RaycastHit hit;     // 충돌체의 정보가 담기는 hit
+            
             if (Physics.Raycast(arCamera.transform.position, arCamera.transform.forward, out hit))
             {
                 Enemy enemy = hit.transform.GetComponent<Enemy>();      // 충돌체로부터 Enemy 컴포넌트를 가져옴 
